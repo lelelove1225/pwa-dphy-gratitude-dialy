@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { format, isSameDay } from "date-fns";
+import { ja } from "date-fns/locale";
+import { Home } from "lucide-react";
 
 interface DiaryEntry {
   content: string;
@@ -7,35 +10,55 @@ interface DiaryEntry {
 }
 
 const DiaryEntry: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { date: locationDate, from } = location.state || {};
+  const [date] = useState<Date>(
+    locationDate ? new Date(locationDate) : new Date()
+  );
+
   const [content, setContent] = useState("");
   const [charCount, setCharCount] = useState(0);
-  const navigate = useNavigate();
   const MAX_CHARS = 10000;
 
   useEffect(() => {
-    const loadLatestDiary = () => {
-      const storedDiaries = localStorage.getItem("diaries");
-      if (storedDiaries) {
-        const diaries: DiaryEntry[] = JSON.parse(storedDiaries);
-        if (diaries.length > 0) {
-          const latestDiary = diaries[diaries.length - 1];
-          setContent(latestDiary.content);
+    const fetchExistingEntry = () => {
+      try {
+        const storedDiaries = localStorage.getItem("diaries");
+        if (storedDiaries) {
+          const diaries: DiaryEntry[] = JSON.parse(storedDiaries);
+          const existingEntry = diaries.find((entry) =>
+            isSameDay(new Date(entry.timestamp), date)
+          );
+          if (existingEntry) {
+            setContent(existingEntry.content);
+            setCharCount(existingEntry.content.length);
+          } else {
+            setContent("");
+            setCharCount(0);
+          }
         }
+      } catch (error) {
+        console.error("Error accessing localStorage:", error);
       }
     };
 
-    loadLatestDiary();
-  }, []);
+    fetchExistingEntry();
+  }, [date]);
 
-  useEffect(() => {
-    setCharCount(content.length);
-  }, [content]);
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newContent = e.target.value;
+    if (newContent.length <= MAX_CHARS) {
+      setContent(newContent);
+      setCharCount(newContent.length);
+    }
+  };
 
-  useEffect(() => {
-    const saveDiary = () => {
+  const saveDiary = () => {
+    try {
       const newEntry: DiaryEntry = {
         content,
-        timestamp: Date.now(),
+        timestamp: date.getTime(),
       };
 
       const storedDiaries = localStorage.getItem("diaries");
@@ -43,10 +66,8 @@ const DiaryEntry: React.FC = () => {
         ? JSON.parse(storedDiaries)
         : [];
 
-      // 同じ日の日記がある場合は上書き、なければ新規追加
-      const today = new Date().toDateString();
-      const existingEntryIndex = diaries.findIndex(
-        (entry) => new Date(entry.timestamp).toDateString() === today
+      const existingEntryIndex = diaries.findIndex((entry) =>
+        isSameDay(new Date(entry.timestamp), date)
       );
 
       if (existingEntryIndex !== -1) {
@@ -56,21 +77,33 @@ const DiaryEntry: React.FC = () => {
       }
 
       localStorage.setItem("diaries", JSON.stringify(diaries));
-    };
+      navigate(from === "home" ? "/home" : "/calendar");
+    } catch (error) {
+      console.error("Error saving diary:", error);
+      // ここでユーザーにエラーメッセージを表示するなどの処理を追加できます
+    }
+  };
 
-    const timeoutId = setTimeout(saveDiary, 1000); // 1秒後に保存
-
-    return () => clearTimeout(timeoutId);
-  }, [content]);
-
-  const handleNavigateHome = () => {
-    navigate("/");
+  const handleCancel = () => {
+    navigate(from === "home" ? "/home" : "/calendar");
   };
 
   return (
     <div className="flex flex-col items-center justify-start min-h-screen bg-white p-4">
       <div className="w-full max-w-md">
-        <h1 className="text-2xl font-bold text-center mb-4">日記を書く</h1>
+        <div className="flex justify-between items-center mb-4">
+          <button
+            onClick={() => navigate("/")}
+            className="p-2 bg-gray-200 rounded"
+          >
+            <Home size={24} />
+          </button>
+          <h1 className="text-2xl font-bold text-center">日記を書く</h1>
+          <div className="w-10"></div> {/* Placeholder for alignment */}
+        </div>
+        <h2 className="text-xl font-bold mb-4">
+          {format(date, "yyyy年M月d日", { locale: ja })}
+        </h2>
         <div className="space-y-4">
           <div>
             <label htmlFor="diary-content" className="block mb-2 font-bold">
@@ -79,8 +112,7 @@ const DiaryEntry: React.FC = () => {
             <textarea
               id="diary-content"
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              maxLength={MAX_CHARS}
+              onChange={handleContentChange}
               rows={10}
               className="w-full p-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
               placeholder="ここに日記を入力してください..."
@@ -90,10 +122,16 @@ const DiaryEntry: React.FC = () => {
             {charCount} / {MAX_CHARS}
           </p>
           <button
-            onClick={handleNavigateHome}
+            onClick={saveDiary}
             className="w-full p-3 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600"
           >
-            ホームに戻る
+            保存
+          </button>
+          <button
+            onClick={handleCancel}
+            className="w-full p-3 bg-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-400"
+          >
+            キャンセル
           </button>
         </div>
       </div>

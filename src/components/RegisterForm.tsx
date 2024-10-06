@@ -3,6 +3,40 @@ import { useNavigate } from "react-router-dom";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
 
+const TermsOfService = () => (
+  <div className="terms-of-service bg-gray-50 p-4 rounded-lg max-h-60 overflow-y-auto text-sm">
+    <h2 className="text-lg font-bold mb-4">利用規約</h2>
+    <h3 className="font-semibold mb-2">1. はじめに</h3>
+    <p className="mb-2">
+      この利用規約（以下、「本規約」といいます。）は、当社が提供するサービス（以下、「本サービス」といいます。）の利用条件を定めるものです。
+    </p>
+
+    <h3 className="font-semibold mb-2">2. 利用登録</h3>
+    <p className="mb-2">
+      登録希望者が当社の定める方法によって利用登録を申請し、当社がこれを承認することによって、利用登録が完了するものとします。
+    </p>
+
+    <h3 className="font-semibold mb-2">3. 禁止事項</h3>
+    <p className="mb-2">
+      ユーザーは、本サービスの利用にあたり、以下の行為をしてはなりません。
+    </p>
+    <ul className="list-disc list-inside mb-2">
+      <li>法令または公序良俗に違反する行為</li>
+      <li>犯罪行為に関連する行為</li>
+      <li>
+        当社のサーバーまたはネットワークの機能を破壊したり、妨害したりする行為
+      </li>
+    </ul>
+
+    <h3 className="font-semibold mb-2">4. 本サービスの提供の停止等</h3>
+    <p className="mb-2">
+      当社は、以下のいずれかの事由があると判断した場合、ユーザーに事前に通知することなく本サービスの全部または一部の提供を停止または中断することができるものとします。
+    </p>
+
+    {/* 他の条項も同様に追加 */}
+  </div>
+);
+
 const RegisterForm: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -89,6 +123,16 @@ const RegisterForm: React.FC = () => {
               </p>
             </div>
 
+            <div>
+              <label
+                htmlFor="terms"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                利用規約
+              </label>
+              <TermsOfService />
+            </div>
+
             <div className="flex items-center">
               <input
                 id="agree-terms"
@@ -102,7 +146,7 @@ const RegisterForm: React.FC = () => {
                 htmlFor="agree-terms"
                 className="ml-2 block text-sm text-gray-900"
               >
-                個人情報関連の文言に同意する
+                利用規約と個人情報関連の文言に同意する
               </label>
             </div>
 
